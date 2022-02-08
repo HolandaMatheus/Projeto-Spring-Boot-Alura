@@ -1,0 +1,209 @@
+Criando um projeto Spring
+
+
+ANOTAÇÕES REST ->
+REST = REPRESENTATIONAL STATE TRANSFER = é um modelo de arquitetura de sistemas tribuidos (Sistemas distribuídos = sistemas que conversam com outros sistemas)
+* Toda aplicação gerencia alguma coisa. Ex.: informações, dados e etc. Esses dados, dentro do REST, são chamados de RECURSOS.
+
+*Como a aplicação tem vários RECURSOS, esses recursos precisam de um IDENTIFICADOR ÚNICO (URI). Por exempo: recursos: aluno URI:/aluno, recursos: topico URI:/topico e etc...
+
+*Esses recursos podem ser manipulados através dos VERBOS HTTP que são o: GET, POST, PUT E DELETE
+
+*O retorno dessa alteração/Representação é através dos MIDIAS TYPE que nada mais são as informações em formato JSON ou XML.
+JSON: 
+"aluno":{
+	"nome": "Fulano",
+	"email": "fulano@...."
+	}
+XML:
+	<aluno>
+		<nome>Fulano</nome>
+		<email>fulano@...</email>
+	</aluno>
+
+*****É UTILIZADO A COMUNICAÇÃO STATELESS QUE NÃO GUARDA O ESTADO DA COMUNICAÇÃO ENTRE AS APLICAÇÕES (SEM USAR AS SESSÕES PARA ARMAZENAR OS DADOS DOS USUÁRIOS LOGADOS)
+
+----------------------------------------#---------------------------------------------#---------------------------------------------#------------------------------------#
+Para Criar um projeto automaticamente = start.spring.io
+
+O intuito do Spring é criar API Rest, ou seja, não precisam de um servidor para rodar pois suas classes MAIN já contem um servidor embutido. Então são criados 
+serviços com configurações de enpoint(URL) que quando são chamadas fazem o que forem programadas para fazer e retornam.
+
+informações sobre POM.XML = A tag <PARENT> é onde é declarado que vai ser utilizado o Springboot
+
+*****PARA INICIAR O SEVIDOR = Precisa rodar a classe principal que contem a anotação @SpringBootApplication <<<<<<<<<<<<<<<<<
+
+
+
+1º Para que a aplicação seja atualizada automaticamente sem precisar para o servidor, deve-se incluir em suas dependências (POM.XML):
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId> ->>>Nome da dependecia: "spring-boot-devtools"
+			<scope>runtime</scope> ->>> É preciso passar o scope informando em qual ponto da aplicação essa dependecia será usada
+		</dependency>
+*** O módulo DevTools inclui ferrmentas utilitparias no projeto, dentre elas a AUTOMATIC RESTART, que reinicia o servidor automaticamente ao detectar alterações no código fonte da aplicação*****
+
+
+
+2º Para que o compilador entenda que um método criado é apenas um serviço, deve-se usar a anotação @ResponseBody. Porém não é preciso fazer anotações em todos os métodos
+basta fazer a anotação @RestController em cima da CLASSE que o compilador entende que todos os métodos definidos ali tem esse mesmo proposito.
+
+Caso não seja feita essa declaração, o compilador vai procurar uma página (url) para retornar a informação... Sendo que na verdade na maioria das vzs os métodos são usados
+apenas para dar "respostas" de um serviço e não uma página.
+
+
+3º Para se conseguir se COMUNICAR COM BANCO DE DADOS é preciso primeiro fazer a importação da dependecia (POM.XML):
+		Adicionado a dependecia de um banco de dados
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		
+		Adicionando o banco de dados
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+		</dependency>
+							
+							B A N C O   DE   D A D O S 
+________________________________________________________________________________________________________________________________
+
+PARA ACESSAR O BANCO: http://localhost:8080/h2-console (Precisa ter iniciado a aplicação no eclipse)
+
+
+BANCO ->>>> 1º Adicionar a dependência do banco no POM.XML
+		
+		<dependency>
+			<groupId>com.h2database</groupId>// Se for um banco local, precisa passar o caminho relativo ? 
+			<artifactId>h2</artifactId>
+		</dependency>
+		
+
+Para configurar o banco (caminho, usuário e etc) precisa ir no arquivo APPLICATIONS.PROPERTIES (Diretório src/main/resources){
+ 
+ # datasource
+spring.datasource.driverClassName=org.h2.Driver -> Informar o drive do banco de dados utilizado
+spring.datasource.url=jdbc:h2:mem:alura-forum -> Informar o endereço do banco
+spring.datasource.username=sa ->usuário
+spring.datasource.password= -> senha
+
+# jpa
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect -> Usando o Hibernate, é necessário informar o dialeto.
+spring.jpa.hibernate.ddl-auto=update -> Essa anotação faz com que o banco seja atualizado automaticamente quando for cirando 
+(em código) uma nova tabela ou coluna sem que precise atualizar
+
+
+# h2
+spring.h2.console.enabled=true -> por usar o banco de dados H2, é possível habilitar uma tela(interface gráfica) para olhar o banco. 
+spring.h2.console.path=/h2-console - Definindo a URL que será usada para visualizar o banco (Ex.: localhost8080/h2-console
+}
+
+- Para todas as classe de DOMÍNIO (classes principais) (SERÃO COMO AS TABELAS NO BANCO DE DADOS) precisa transformar em ENTIDADES DA JPA.
+
+*Em cima da declação da classe usar a anotaçã @Entity para iinformar que será uma tabela do banco.
+
+*Em cima do atributo que representa a CHAVE PRIMÁRIA usar a anotação @Id + @GeneratedValue(strategy = GenerationType.IDENTITY) 
+- @GeneratedValue = gera a chave primaria na tabela automaticamente.
+- strategy = GenerationType.IDENTITY = gera chave autoincremente  OOOOOOOU 
+- strategy = GenerationType.SEQUENCE = se i banco usar sequence.
+	
+******ex.:
+@Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+	private String nome;
+	private String email;
+	private String senha;
+---->Nesse caso, só o ID é uma chave primária na tabela
+	
+	
+*@Enumerated(EnumType.STRING)//informa ao banco de dados que o atributo ENUM sera gravado apenas seu estado
+******ex.:	
+	private StatusTopico status = StatusTopico.NAO_RESPONDIDO;
+---->Por padrão o Srping salva a sequencia do ENUM, mas para gravar o ESTADO, deve-se utilizar essa anotação
+
+////////////////////////////////////////////////////////////////C A R D I N A L I D A D E S /////////////////////////////////
+*Para ser acertivo nesse cenário, é preciso fazer as perguntas: 1 curso pode ter 1 tópico, mas o tópico pode ter vários cursos(ex)
+
+*@ManyToOne //informa que podem ter vários cursos, porém apenas 1 Curso
+	private Curso curso;
+	
+	
+*@OneToMany(mappedBy = "topico") //Informa ao banco que 1 topico pode ter várias respostas
+ 	private List<Resposta> respostas = new ArrayList<>();
+	
+	---IMPORTANTE---
+@OneToMany(mappedBy = "topico") = Essa anotação declara a variável "topico" na classe RESPOSTA informando que já existe um relacionamento com o banco e que não precisa fazer um novo mapeamento. 
+
+*no diretório "src/main/resources" Existe um arquivo chamado "data.sql" que, toda ver que a aplicação for inicializada,
+ela cria um novo banco e para que os dados existam, esse documento foi gerado para ser populado assim que o banco for iniciado.
+
+****No arquivo application.properties, devem ser declaradas as configurações da aplicação, inclusive as relacionadas ao banco de dados dela.
+
+**** I M P O R T A N T E 
+
+Na classe TopicoController, existe uma condição utilizando o método "findByCurso_Nome" -> Essa consulta significa que ele pesquisar na tabela CURSO procurando como o NOME (que é um dos atributos dessa classe. PODE SER USADO QQ ATRIBUTO DA CLASSE. Ex.: NOMEdaTABELA_NOMWdoATRIBUTO)
+-findByCurso_Nome -> Curso_Nome = o "_" esta informando que é para acessar a tabela curso e o atributo nome. PQ ISSO ? R.: para evitar/corrigir problamas com variàveis com o mesmo nome.
+-PARA QUE ISSO ACONTEÇA... Precisa SEMPRE utilizar o >> findBy <<  + nome da entitade +(opcional) nome do atributo
+
+
+A anotação @RestControllerAdvice diz que a CLASSE com a quela anotação, será usada quando houver uma excessão. * Precisa configurar
+
+A anotação @ExceptionHandler(MethodArgumentNotValidException.class) diz que aquele método declarado dentro da classe acima, vai ser chamado sempre que a EXCEPTION.... (parametro do método)
+for lançada.
+
+A anotação veita tbm no método acima @ResponseStatus(code = HttpStatus.BAD_REQUEST) diz que não que devolver um erro 500 e sim um 400 (bad request).
+
+A classe ErroDeFormularioDto serve para tratar o erro que foi gerado e receber o campo onde ocorreu o erro sua msg
+
+O parametro LocaleContextHolder.getLocale() enviado na criação de um erro na classe ErrpDeValidacaoHandler ajuda no sentido de que, se vie no cabeçalho da requisilção 
+a linguagem "desejada" o retorno do erro será na linguagem desejada.
+
+
+A anotação @Transactional serve para, dps que o método fizer seu trabalho, ele automaticamente da um update no banco de dados. Salvando as alterações feitas.
+
+
+A anotação @DeleteMapping no método, significa que sera feita uma exclusão no banco de dados.
+
+O método findById pesquisa no banco de dados um objeto a partir de um ID e devolve um OPTIONAL.
+Esse OPTIONAL por sua vez já valida se existe ou não um objeto com o id de pesquisa utilizando o método inPresente()
+
+
+Para receber parâmetros dinâmicos no path da URL, devemos utilizar a anotação @PathVariable;
+
+Para mapear requisições do tipo PUT, devemos utilizar a anotação @PutMapping;
+
+Para fazer o controle transacional automático, devemos utilizar a anotação @Transactional nos métodos do controller;
+
+Para mapear requisições do tipo DELETE, devemos utilizar a anotação @DeleteMapping;
+
+Para tratar o erro 404 na classe controller, devemos utilizar o método findById, ao invés do método getOne, e utilizar a classe ResponseEntity para montar a resposta de not found;
+
+O método getOne lança uma exception quando o id passado como parâmetro não existir no banco de dados;
+
+O método findById retorna um objeto Optional<>, que pode ou não conter um objeto.
+
+
+*****************************************************
+Qual o objetivo de se utilizar a anotação @ResponseStatus na classe que representa o RestControllerAdvice?
+R.: Para alterar o status code devolvido como resposta,
+Alternativa correta! O status code padrão a ser devolvido será o 200, mas é possível modificá-lo com a anotação @ResponseStatus.
+
+________________________________________________________________________________________________________________________________
+Para fazer validações das informações enviadas pelos clientes da API, podemos utilizar a especificação Bean Validation, com as anotações @NotNull, @NotEmpty, @Size, dentre outras;
+Para o Spring disparar as validações do Bean Validation e devolver um erro 400, caso alguma informação enviada pelo cliente esteja inválida, devemos utilizar a anotação @Valid;
+Para interceptar as exceptions que forem lançadas nos métodos das classes controller, devemos criar uma classe anotada com @RestControllerAdvice;
+Para tratar os erros de validação do Bean Validation e personalizar o JSON, que será devolvido ao cliente da API, com as mensagens de erro, devemos criar um método na classe @RestControllerAdvice e anotá-lo com @ExceptionHandler e @ResponseStatus.
+
+***************************************************************TRABALHO*********************************************************************************
+NÃO é uma boa pratica criar uma lista de uma CLASSE DE DOMINIO (classe principal com todas as informações) pois SEMPRE sera retornado TODOS os seus atributos.
+Para que isso não aconteca é usado o DTO (Data Transfer Object) ou VO(Value Object) para retornar apenas os atributos desejado e estipulados para um determinado serviço
+ou URL.
+
+Após criar as variáveis que deseja retornar, deve criar APENAS os GETS
+
+*O SPRING converte as informações para JSON por padrão.
+
+*JPA = Especificação no JAVA para trabalhar com banco de dados.
+********************************************************************************************************************************************************
+
+
